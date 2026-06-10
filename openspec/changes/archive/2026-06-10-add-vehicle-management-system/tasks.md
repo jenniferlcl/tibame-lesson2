@@ -3,7 +3,7 @@
 - [x] 1.1 建立 monorepo 目錄結構：`apps/frontend`、`apps/backend`，根目錄加 `docker-compose.yml`
 - [x] 1.2 撰寫 `docker-compose.yml`：定義 `postgres`（port 5432）與 `pgadmin`（port 5050）服務，設定 volume 持久化
 - [x] 1.3 建立 `apps/backend/.env.example` 與 `apps/frontend/.env.example`，記錄所需環境變數（DB_URL、JWT_SECRET、PORT 等）
-- [ ] 1.4 確認 Docker Compose 正常啟動，pgAdmin 可連線至 PostgreSQL
+- [x] 1.4 確認 Docker Compose 正常啟動，pgAdmin 可連線至 PostgreSQL
 
 ## 2. Database Schema
 
