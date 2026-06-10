@@ -1,0 +1,73 @@
+schema: spec-driven
+
+context: |
+  ## 專案概述
+
+  Vehicle Management System（VMS）— 內部車隊管理系統，介面與文件均使用繁體中文。
+  Monorepo，包含三個獨立套件（各自有 node_modules，非 npm workspaces）：
+  - apps/backend  — Express 5 + pg（原生 SQL）+ PostgreSQL 16，CommonJS，port 3001
+  - apps/frontend — React 18 + Vite 5 + React Router 6 + Tailwind CSS 3 + Axios，ESM，port 5173
+  - src/skills/   — 根目錄 Agent skill 範例，ESM，Node ≥ 20，Jest 測試
+
+  ## Tech Stack
+
+  **後端**
+  - Node.js ≥ 20，CommonJS（require/module.exports）
+  - Express 5（無 Prisma，無 ORM，所有 SQL 直接使用 pg.Pool 搭配 $1/$2 參數化查詢）
+  - bcrypt（cost 12）for password hashing
+  - jsonwebtoken：JWT 存於 httpOnly + Secure + SameSite=Strict Cookie，效期 2h
+  - 中介層：authenticate（驗 JWT cookie）→ authorize(['admin'])（檢查角色）
+  - 錯誤回應格式：`{ message: '...' }`，搭配對應 HTTP status code
+
+  **前端**
+  - React 18，ESM，`@` alias → `src/`
+  - React Router 6：protected routes 以 PrivateRoute / AdminRoute 元件實作
+  - AuthContext：mount 時呼叫 GET /api/auth/me 還原 session，user===undefined 表示載入中
+  - Axios instance（src/lib/api.js）：baseURL='/api'，withCredentials:true；Vite proxy /api → http://localhost:3001
+  - 沒有 TanStack Query、沒有全域 state library（Zustand 等）
+
+  **資料庫**
+  - PostgreSQL 16，透過 Docker Compose 啟動
+  - Schema 定義在 apps/backend/src/db/schema.sql，seed 在 seed.sql，由 Docker 自動初始化
+  - 重置 DB：docker compose down -v && docker compose up -d
+  - 核心 ENUM：user_role('admin','user')、vehicle_status('available','in_use','maintenance','retired')
+  - 三張核心表：users、employees（1-to-1 with users）、vehicles（optional FK to employees）
+
+  ## 角色權限
+
+  - admin：可存取所有功能，包含員工管理與車輛刪除
+  - user：可檢視/新增/編輯車輛；無法存取員工管理頁
+  - /api/employees 所有路由 → adminOnly
+  - DELETE /api/vehicles/:id → adminOnly
+  - 其餘 vehicle 路由 → authenticate only
+
+  ## 開發慣例
+
+  - Conventional commits，commit message 以繁體中文描述
+  - 前端元件使用具名匯出（named export），非 default export（除 App.jsx）
+  - 後端 SQL 使用 COALESCE 做部分更新（PUT 路由）
+  - 建立員工同時建立 user 帳號，在同一 transaction 內完成（BEGIN/COMMIT/ROLLBACK）
+  - Husky pre-commit：並行執行 npm run lint 與 npm test（根目錄），兩者皆須通過
+
+  ## Non-Goals（本期不含）
+
+  - 車輛出借/歸還工作流程
+  - 行動裝置 App
+  - 第三方 OAuth / SSO
+  - 實時通知（WebSocket）
+  - ORM 或 migration tool
+
+rules:
+  proposal:
+    - 使用繁體中文撰寫
+    - Why 說明業務需求與痛點，What Changes 列出功能項目，Capabilities 對應到系統能力標識符
+  design:
+    - 使用繁體中文撰寫
+    - 每個重要決策須包含：選擇、理由、備選方案
+    - 列出 Risks / Trade-offs，說明 Mitigation
+    - Non-Goals 明確列出本次不涵蓋的範疇
+  tasks:
+    - 使用繁體中文撰寫
+    - 每個 task 拆成可在 1-2 小時內完成的單元
+    - 後端 task 與前端 task 分開列出
+    - 標明受影響的檔案路徑
