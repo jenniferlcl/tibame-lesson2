@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Car, Users, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const navItem = 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150';
@@ -16,7 +17,6 @@ export function Sidebar() {
 
   return (
     <aside className="w-60 shrink-0 bg-white border-r flex flex-col h-screen sticky top-0 shadow-sm">
-      {/* 品牌識別 */}
       <div className="p-5 border-b border-border-subtle">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-brand-primary rounded-lg flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
@@ -64,12 +64,13 @@ export function Sidebar() {
       </nav>
 
       <div className="p-3 border-t border-border-subtle">
-        <button
+        <Button
+          variant="ghost"
           onClick={handleLogout}
-          className={cn(navItem, 'w-full text-slate-500 hover:bg-red-50 hover:text-red-600')}
+          className="w-full justify-start gap-3 text-slate-500 hover:bg-red-50 hover:text-red-600"
         >
           <LogOut size={18} /> 登出
-        </button>
+        </Button>
       </div>
     </aside>
   );

@@ -18,7 +18,7 @@ export default function App() {
             <Route path="/vehicles" element={<VehiclesPage />} />
             <Route path="/employees" element={<AdminRoute><EmployeesPage /></AdminRoute>} />
           </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
