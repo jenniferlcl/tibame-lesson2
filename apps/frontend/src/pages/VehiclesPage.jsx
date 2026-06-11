@@ -1,100 +1,113 @@
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Select } from '@/components/Select';
-import { VehicleStatusBadge } from '@/components/VehicleStatusBadge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const STATUS_LABEL = { available: '可用', in_use: '使用中', maintenance: '維修中', retired: '報廢' };
+const STATUS_VARIANT = { available: 'default', in_use: 'secondary', maintenance: 'outline', retired: 'outline' };
+const STATUS_CLASS = {
+  available: 'bg-green-100 text-green-700 border-green-200',
+  in_use: 'bg-blue-100 text-blue-700 border-blue-200',
+  maintenance: 'bg-amber-100 text-amber-700 border-amber-200',
+  retired: 'bg-slate-100 text-slate-500 border-slate-200',
+};
 const STATUS_OPTIONS = Object.entries(STATUS_LABEL);
-const STATUS_SELECT_OPTIONS = STATUS_OPTIONS.map(([value, label]) => ({ value, label }));
+const BRAND_LIST = ['Toyota', 'Honda', 'Ford', 'Mazda', 'Nissan', 'Mitsubishi', 'BMW', 'Mercedes-Benz', '其他'];
+const NO_EMPLOYEE = '__none__';
+const EMPTY_FORM = { plate: '', brand: '', model: '', color: '', year: '', mileage: '', status: 'available', assigned_employee_id: NO_EMPLOYEE };
 
-const BRAND_OPTIONS = [
-  'Toyota', 'Honda', 'Ford', 'Mazda', 'Nissan', 'Mitsubishi', 'BMW', 'Mercedes-Benz', '其他',
-].map(b => ({ value: b, label: b }));
-
-const EMPTY_FORM = { plate: '', brand: '', model: '', color: '', year: '', mileage: '', status: 'available', assigned_employee_id: '' };
+function SortIcon({ col, sortCol, sortDir }) {
+  if (sortCol !== col) return <ArrowUpDown size={14} className="ml-1 text-slate-400" />;
+  return sortDir === 'asc' ? <ArrowUp size={14} className="ml-1" /> : <ArrowDown size={14} className="ml-1" />;
+}
 
 function VehicleDialog({ open, onClose, initial, employees, onSave }) {
   const [form, setForm] = useState(initial ?? EMPTY_FORM);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => { setForm(initial ?? EMPTY_FORM); setError(''); }, [initial, open]);
 
-  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   async function handleSave() {
-    setError('');
+    if (!form.plate || !form.brand || !form.model) { setError('車牌、廠牌、車型為必填'); return; }
+    setError(''); setLoading(true);
     try {
       const payload = {
         ...form,
         year: form.year ? parseInt(form.year) : null,
         mileage: form.mileage ? parseInt(form.mileage) : 0,
-        assigned_employee_id: form.assigned_employee_id ? parseInt(form.assigned_employee_id) : null,
+        assigned_employee_id: (form.assigned_employee_id && form.assigned_employee_id !== NO_EMPLOYEE) ? parseInt(form.assigned_employee_id) : null,
       };
-      if (initial?.id) {
-        await api.put(`/vehicles/${initial.id}`, payload);
-      } else {
-        await api.post('/vehicles', payload);
-      }
+      if (initial?.id) await api.put(`/vehicles/${initial.id}`, payload);
+      else await api.post('/vehicles', payload);
       onSave();
     } catch (err) {
       setError(err.response?.data?.message ?? '儲存失敗');
+    } finally {
+      setLoading(false);
     }
   }
 
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-card rounded-xl shadow-xl p-6 w-full max-w-md space-y-4">
-        <h3 className="font-semibold text-lg">{initial?.id ? '編輯車輛' : '新增車輛'}</h3>
-        {[
-          ['plate','車牌號碼','text'],['model','車型','text'],
-          ['color','顏色','text'],['year','年份','number'],['mileage','里程 (km)','number'],
-        ].map(([k, label, type]) => (
-          <div key={k}>
-            <label className="block text-sm font-medium mb-1">{label}</label>
-            <input type={type} className="w-full border rounded-md px-3 py-2 text-sm" value={form[k]} onChange={set(k)} />
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{initial?.id ? '編輯車輛' : '新增車輛'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          {[['plate','車牌號碼'],['model','車型'],['color','顏色']].map(([k, label]) => (
+            <div key={k} className="space-y-1.5">
+              <label className="text-sm font-medium">{label}</label>
+              <Input value={form[k]} onChange={e => setField(k, e.target.value)} />
+            </div>
+          ))}
+          {[['year','年份','number'],['mileage','里程 (km)','number']].map(([k, label, type]) => (
+            <div key={k} className="space-y-1.5">
+              <label className="text-sm font-medium">{label}</label>
+              <Input type={type} value={form[k]} onChange={e => setField(k, e.target.value)} />
+            </div>
+          ))}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">廠牌</label>
+            <Select value={form.brand} onValueChange={v => setField('brand', v)}>
+              <SelectTrigger><SelectValue placeholder="選擇廠牌" /></SelectTrigger>
+              <SelectContent>{BRAND_LIST.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
+            </Select>
           </div>
-        ))}
-        <div>
-          <label className="block text-sm font-medium mb-1">廠牌</label>
-          <Select options={BRAND_OPTIONS} value={form.brand} onChange={set('brand')} placeholder="選擇廠牌" />
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">狀態</label>
+            <Select value={form.status} onValueChange={v => setField('status', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUS_OPTIONS.map(([v,l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">指派員工</label>
+            <Select value={form.assigned_employee_id?.toString() || ''} onValueChange={v => setField('assigned_employee_id', v)}>
+              <SelectTrigger><SelectValue placeholder="— 未指派 —" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_EMPLOYEE}>— 未指派 —</SelectItem>
+                {employees.map(e => <SelectItem key={e.id} value={e.id.toString()}>{e.name} ({e.employee_no})</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {error && <p className="text-destructive text-sm">{error}</p>}
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">狀態</label>
-          <Select options={STATUS_SELECT_OPTIONS} value={form.status} onChange={set('status')} />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">指派員工</label>
-          <select className="w-full border rounded-md px-3 py-2 text-sm" value={form.assigned_employee_id} onChange={set('assigned_employee_id')}>
-            <option value="">— 未指派 —</option>
-            {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_no})</option>)}
-          </select>
-        </div>
-        {error && <p className="text-destructive text-sm">{error}</p>}
-        <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="px-4 py-2 border rounded-md text-sm hover:bg-muted">取消</button>
-          <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90">儲存</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DeleteDialog({ open, vehicle, onClose, onConfirm }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-card rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4">
-        <h3 className="font-semibold text-lg">確認刪除</h3>
-        <p className="text-sm text-muted-foreground">確定要刪除車輛 <strong>{vehicle?.plate}</strong>？此操作無法復原。</p>
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 border rounded-md text-sm hover:bg-muted">取消</button>
-          <button onClick={onConfirm} className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm hover:opacity-90">刪除</button>
-        </div>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>取消</Button>
+          <Button onClick={handleSave} disabled={loading}>{loading ? '儲存中...' : '儲存'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -104,14 +117,21 @@ export function VehiclesPage() {
   const [vehicles, setVehicles] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortCol, setSortCol] = useState('');
+  const [sortDir, setSortDir] = useState('asc');
+  function toDialogVehicle(v) {
+    if (!v) return null;
+    return { ...v, assigned_employee_id: v.assigned_employee_id?.toString() || NO_EMPLOYEE };
+  }
+
   const [dialog, setDialog] = useState({ open: false, vehicle: null });
-  const [delDialog, setDelDialog] = useState({ open: false, vehicle: null });
+  const [delVehicle, setDelVehicle] = useState(null);
 
   async function load() {
     const params = {};
     if (search) params.search = search;
-    if (statusFilter) params.status = statusFilter;
+    if (statusFilter && statusFilter !== 'all') params.status = statusFilter;
     const { data } = await api.get('/vehicles', { params });
     setVehicles(data);
   }
@@ -122,59 +142,100 @@ export function VehiclesPage() {
 
   useEffect(() => { load(); }, [search, statusFilter]);
 
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+  }
+
+  const sorted = [...vehicles].sort((a, b) => {
+    if (!sortCol) return 0;
+    const va = a[sortCol] ?? ''; const vb = b[sortCol] ?? '';
+    const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb));
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
   async function handleDelete() {
-    await api.delete(`/vehicles/${delDialog.vehicle.id}`);
-    setDelDialog({ open: false, vehicle: null });
+    await api.delete(`/vehicles/${delVehicle.id}`);
+    setDelVehicle(null);
     load();
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">車輛管理</h2>
-        <button onClick={() => setDialog({ open: true, vehicle: null })} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90">
-          <Plus size={16} /> 新增車輛
-        </button>
+        <div>
+          <h2 className="text-2xl font-bold">車輛管理</h2>
+          <p className="text-muted-foreground text-sm mt-1">共 {vehicles.length} 台車輛</p>
+        </div>
+        <Button onClick={() => setDialog({ open: true, vehicle: null })}>
+          <Plus size={16} className="mr-2" /> 新增車輛
+        </Button>
       </div>
 
       <div className="flex gap-3">
         <div className="relative flex-1 max-w-xs">
           <Search size={16} className="absolute left-3 top-2.5 text-muted-foreground" />
-          <input className="pl-9 w-full border rounded-md px-3 py-2 text-sm" placeholder="搜尋車牌..." value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-9" placeholder="搜尋車牌..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <select className="border rounded-md px-3 py-2 text-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          <option value="">全部狀態</option>
-          {STATUS_OPTIONS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-36"><SelectValue placeholder="全部狀態" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部狀態</SelectItem>
+            {STATUS_OPTIONS.map(([v,l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-muted-foreground">
-            <tr>{['車牌','廠牌','車型','顏色','年份','里程','狀態','指派員工','操作'].map(h => <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>)}</tr>
-          </thead>
-          <tbody className="divide-y">
-            {vehicles.map(v => (
-              <tr key={v.id} className="hover:bg-muted/20">
-                <td className="px-4 py-3 font-mono">{v.plate}</td>
-                <td className="px-4 py-3">{v.brand}</td>
-                <td className="px-4 py-3">{v.model}</td>
-                <td className="px-4 py-3">{v.color ?? '—'}</td>
-                <td className="px-4 py-3">{v.year ?? '—'}</td>
-                <td className="px-4 py-3">{v.mileage?.toLocaleString()} km</td>
-                <td className="px-4 py-3"><VehicleStatusBadge status={v.status} /></td>
-                <td className="px-4 py-3">{v.assigned_employee_name ?? '—'}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button onClick={() => setDialog({ open: true, vehicle: v })} className="p-1.5 rounded hover:bg-muted"><Pencil size={15} /></button>
-                    {isAdmin && <button onClick={() => setDelDialog({ open: true, vehicle: v })} className="p-1.5 rounded hover:bg-destructive/10 text-destructive"><Trash2 size={15} /></button>}
+      <div className="rounded-xl border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {[['plate','車牌'],['brand','廠牌'],['model','車型'],['color','顏色'],
+                ['year','年份'],['mileage','里程'],['status','狀態']].map(([col, label]) => (
+                <TableHead key={col}>
+                  <button className="flex items-center text-left font-medium hover:text-foreground" onClick={() => toggleSort(col)}>
+                    {label}<SortIcon col={col} sortCol={sortCol} sortDir={sortDir} />
+                  </button>
+                </TableHead>
+              ))}
+              <TableHead>指派員工</TableHead>
+              <TableHead>操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sorted.map(v => (
+              <TableRow key={v.id}>
+                <TableCell className="font-mono">{v.plate}</TableCell>
+                <TableCell>{v.brand}</TableCell>
+                <TableCell>{v.model}</TableCell>
+                <TableCell>{v.color ?? '—'}</TableCell>
+                <TableCell>{v.year ?? '—'}</TableCell>
+                <TableCell>{v.mileage?.toLocaleString()} km</TableCell>
+                <TableCell>
+                  <Badge className={STATUS_CLASS[v.status] ?? ''} variant="outline">
+                    {STATUS_LABEL[v.status] ?? v.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{v.assigned_employee_name ?? '—'}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="icon" variant="ghost" onClick={() => setDialog({ open: true, vehicle: toDialogVehicle(v) })}>
+                      <Pencil size={15} />
+                    </Button>
+                    {isAdmin && (
+                      <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setDelVehicle(v)}>
+                        <Trash2 size={15} />
+                      </Button>
+                    )}
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-            {!vehicles.length && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">尚無資料</td></tr>}
-          </tbody>
-        </table>
+            {!sorted.length && (
+              <TableRow><TableCell colSpan={9} className="py-8 text-center text-muted-foreground">尚無車輛資料</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       <VehicleDialog
@@ -184,12 +245,21 @@ export function VehiclesPage() {
         employees={employees}
         onSave={() => { setDialog({ open: false, vehicle: null }); load(); }}
       />
-      <DeleteDialog
-        open={delDialog.open}
-        vehicle={delDialog.vehicle}
-        onClose={() => setDelDialog({ open: false, vehicle: null })}
-        onConfirm={handleDelete}
-      />
+
+      <AlertDialog open={!!delVehicle} onOpenChange={v => !v && setDelVehicle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>確認刪除</AlertDialogTitle>
+            <AlertDialogDescription>
+              確定要刪除車輛 <strong>{delVehicle?.plate}</strong>？此操作無法復原。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">刪除</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
