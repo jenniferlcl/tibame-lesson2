@@ -4,6 +4,7 @@ const pool = require('../db/pool');
 const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const { DEPARTMENTS, USER_ROLES } = require('../lib/enums');
+const { logAction } = require('../lib/audit');
 
 const router = express.Router();
 const adminOnly = [authenticate, authorize(['admin'])];
@@ -56,6 +57,7 @@ router.post('/', ...adminOnly, async (req, res) => {
     );
     await client.query('COMMIT');
     res.status(201).json({ ...empRes.rows[0], username, role: role || 'user' });
+    logAction(req.user.id, 'create', 'employee', empRes.rows[0].id, { name: empRes.rows[0].name });
   } catch (err) {
     await client.query('ROLLBACK');
     if (err.code === '23505') return res.status(409).json({ message: 'employee_no or username already exists' });
@@ -111,6 +113,7 @@ router.put('/:id', ...adminOnly, async (req, res) => {
       [id]
     );
     res.json(rows[0]);
+    logAction(req.user.id, 'update', 'employee', parseInt(id), { name: rows[0].name });
   } catch (err) {
     await client.query('ROLLBACK');
     if (err.code === '23505') return res.status(409).json({ message: 'employee_no or username already exists' });
@@ -137,6 +140,7 @@ router.delete('/:id', ...adminOnly, async (req, res) => {
     await pool.query('DELETE FROM employees WHERE id = $1', [id]);
     if (userId) await pool.query('DELETE FROM users WHERE id = $1', [userId]);
     res.status(204).send();
+    logAction(req.user.id, 'delete', 'employee', parseInt(id), {});
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Internal server error' });

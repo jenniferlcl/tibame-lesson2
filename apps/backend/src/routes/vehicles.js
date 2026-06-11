@@ -2,7 +2,8 @@ const express = require('express');
 const pool = require('../db/pool');
 const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
-const { VEHICLE_STATUSES } = require('../lib/enums');
+const { VEHICLE_STATUSES, VEHICLE_BRANDS, VEHICLE_COLORS } = require('../lib/enums');
+const { logAction } = require('../lib/audit');
 
 const router = express.Router();
 
@@ -42,6 +43,10 @@ router.post('/', authenticate, async (req, res) => {
     return res.status(400).json({ message: 'plate, brand, model are required' });
   if (status && !VEHICLE_STATUSES.includes(status))
     return res.status(400).json({ message: 'Invalid status value' });
+  if (brand && !VEHICLE_BRANDS.includes(brand))
+    return res.status(400).json({ message: 'Invalid brand value' });
+  if (color && !VEHICLE_COLORS.includes(color))
+    return res.status(400).json({ message: 'Invalid color value' });
 
   try {
     const { rows } = await pool.query(
@@ -50,6 +55,7 @@ router.post('/', authenticate, async (req, res) => {
       [plate, brand, model, color || null, year || null, mileage || 0, status || 'available', assigned_employee_id || null]
     );
     res.status(201).json(rows[0]);
+    logAction(req.user.id, 'create', 'vehicle', rows[0].id, { plate: rows[0].plate });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ message: 'Plate number already exists' });
     console.error(err);
@@ -63,6 +69,10 @@ router.put('/:id', authenticate, async (req, res) => {
 
   if (status && !VEHICLE_STATUSES.includes(status))
     return res.status(400).json({ message: 'Invalid status value' });
+  if (brand && !VEHICLE_BRANDS.includes(brand))
+    return res.status(400).json({ message: 'Invalid brand value' });
+  if (color && !VEHICLE_COLORS.includes(color))
+    return res.status(400).json({ message: 'Invalid color value' });
   if (status === 'retired' && assigned_employee_id)
     return res.status(400).json({ message: 'Retired vehicles cannot be assigned to an employee' });
 
@@ -82,6 +92,7 @@ router.put('/:id', authenticate, async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ message: 'Vehicle not found' });
     res.json(rows[0]);
+    logAction(req.user.id, 'update', 'vehicle', rows[0].id, { plate: rows[0].plate });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ message: 'Plate number already exists' });
     console.error(err);
@@ -94,6 +105,7 @@ router.delete('/:id', authenticate, authorize(['admin']), async (req, res) => {
     const { rowCount } = await pool.query('DELETE FROM vehicles WHERE id = $1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ message: 'Vehicle not found' });
     res.status(204).send();
+    logAction(req.user.id, 'delete', 'vehicle', req.params.id, {});
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Internal server error' });

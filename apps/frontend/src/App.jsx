@@ -6,6 +6,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { VehiclesPage } from '@/pages/VehiclesPage';
 import { EmployeesPage } from '@/pages/EmployeesPage';
+import { AuditLogPage } from '@/pages/AuditLogPage';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/vehicles" element={<VehiclesPage />} />
             <Route path="/employees" element={<AdminRoute><EmployeesPage /></AdminRoute>} />
+            <Route path="/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>

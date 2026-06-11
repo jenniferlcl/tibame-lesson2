@@ -7,6 +7,7 @@ const authRouter = require('./routes/auth');
 const dashboardRouter = require('./routes/dashboard');
 const vehiclesRouter = require('./routes/vehicles');
 const employeesRouter = require('./routes/employees');
+const auditRouter = require('./routes/audit');
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/vehicles', vehiclesRouter);
 app.use('/api/employees', employeesRouter);
+app.use('/api/audit-log', auditRouter);
 
 app.use((req, res) => res.status(404).json({ message: 'Not found' }));
 
