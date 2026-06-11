@@ -19,7 +19,8 @@ const STATUS_CLASS = {
   retired: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 const STATUS_OPTIONS = Object.entries(STATUS_LABEL);
-const BRAND_LIST = ['Toyota', 'Honda', 'Ford', 'Mazda', 'Nissan', 'Mitsubishi', 'BMW', 'Mercedes-Benz', '其他'];
+const BRAND_LIST  = ['Toyota', 'Honda', 'Ford', 'Mazda', 'Nissan', 'Mitsubishi', 'BMW', 'Mercedes-Benz', '其他'];
+const COLOR_LIST  = ['白色', '銀色', '黑色', '灰色', '紅色', '藍色', '棕色', '橘色', '黃色', '綠色', '其他'];
 const NO_EMPLOYEE = '__none__';
 const EMPTY_FORM = { plate: '', brand: '', model: '', color: '', year: '', mileage: '', status: 'available', assigned_employee_id: NO_EMPLOYEE };
 
@@ -64,12 +65,19 @@ function VehicleDialog({ open, onClose, initial, employees, onSave }) {
           <DialogTitle>{initial?.id ? '編輯車輛' : '新增車輛'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          {[['plate','車牌號碼'],['model','車型'],['color','顏色']].map(([k, label]) => (
+          {[['plate','車牌號碼'],['model','車型']].map(([k, label]) => (
             <div key={k} className="space-y-1.5">
               <label className="text-sm font-medium">{label}</label>
               <Input value={form[k]} onChange={e => setField(k, e.target.value)} />
             </div>
           ))}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">顏色</label>
+            <Select value={form.color} onValueChange={v => setField('color', v)}>
+              <SelectTrigger><SelectValue placeholder="選擇顏色" /></SelectTrigger>
+              <SelectContent>{COLOR_LIST.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
           {[['year','年份','number'],['mileage','里程 (km)','number']].map(([k, label, type]) => (
             <div key={k} className="space-y-1.5">
               <label className="text-sm font-medium">{label}</label>
@@ -164,7 +172,7 @@ export function VehiclesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">車輛管理</h2>
+          <h2 className="text-2xl font-bold text-gradient">車輛管理</h2>
           <p className="text-muted-foreground text-sm mt-1">共 {vehicles.length} 台車輛</p>
         </div>
         <Button onClick={() => setDialog({ open: true, vehicle: null })}>
@@ -204,7 +212,7 @@ export function VehiclesPage() {
           </TableHeader>
           <TableBody>
             {sorted.map(v => (
-              <TableRow key={v.id}>
+              <TableRow key={v.id} className="border-l-2 border-l-transparent hover:border-l-brand-primary/40 transition-colors">
                 <TableCell className="font-mono">{v.plate}</TableCell>
                 <TableCell>{v.brand}</TableCell>
                 <TableCell>{v.model}</TableCell>

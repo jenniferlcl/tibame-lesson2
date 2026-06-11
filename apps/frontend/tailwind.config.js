@@ -29,6 +29,22 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      boxShadow: {
+        'glow-indigo': '0 0 20px rgba(99,102,241,0.25)',
+        'glow-green':  '0 0 16px rgba(34,197,94,0.22)',
+        'glow-blue':   '0 0 16px rgba(59,130,246,0.22)',
+        'glow-amber':  '0 0 16px rgba(245,158,11,0.22)',
+        'glow-violet': '0 0 16px rgba(139,92,246,0.22)',
+      },
+      keyframes: {
+        shimmer: {
+          '0%':   { backgroundPosition: '-200% center' },
+          '100%': { backgroundPosition:  '200% center' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 2.5s linear infinite',
+      },
     },
   },
   plugins: [],

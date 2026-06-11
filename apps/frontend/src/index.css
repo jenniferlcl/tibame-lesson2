@@ -29,3 +29,14 @@
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
 }
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-primary to-indigo-400 bg-clip-text text-transparent;
+  }
+  .shimmer-bg {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+}
