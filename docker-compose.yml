@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: vms_user
       POSTGRES_PASSWORD: vms_password
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./apps/backend/src/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
@@ -30,8 +30,12 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - '5050:80'
+    entrypoint: >
+      /bin/sh -c "cp /tmp/pgpass /var/lib/pgadmin/pgpass && chmod 600 /var/lib/pgadmin/pgpass && /entrypoint.sh"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+      - ./infra/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./infra/pgadmin/pgpass:/tmp/pgpass:ro
     depends_on:
       postgres:
         condition: service_healthy
