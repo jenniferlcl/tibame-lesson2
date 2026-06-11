@@ -45,7 +45,7 @@ router.get('/stats', authenticate, async (req, res) => {
         status: r.status,
         count:  parseInt(r.count),
       })),
-      monthlyTrend: monthlyTrend.rows.map(r => ({
+      monthlyVehicles: monthlyTrend.rows.map(r => ({
         month: r.month,
         count: parseInt(r.count),
       })),
