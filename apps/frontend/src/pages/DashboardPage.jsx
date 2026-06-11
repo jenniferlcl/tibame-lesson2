@@ -33,19 +33,20 @@ function buildLast6Months(data = []) {
   return result;
 }
 
-function KpiCard({ icon: Icon, label, value, colorClass }) {
+function KpiCard({ icon: Icon, label, value, colorClass, glowClass }) {
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardContent className="pt-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-1">{label}</p>
-            <p className="text-3xl font-bold tracking-tight text-slate-900">
+            <p className="text-3xl font-bold tracking-tight tabular-nums text-slate-900">
               {value != null ? <NumberTicker value={value} className="text-3xl font-bold" /> : '—'}
             </p>
           </div>
-          <div className={`p-3 rounded-xl ${colorClass}`}>
-            <Icon size={22} className="text-white" />
+          <div className={`relative p-3 rounded-xl ${colorClass} ${glowClass} overflow-hidden`}>
+            <div className="absolute inset-0 shimmer-bg opacity-60" />
+            <Icon size={22} className="relative text-white" />
           </div>
         </div>
       </CardContent>
@@ -71,15 +72,15 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">儀表板</h2>
+        <h2 className="text-2xl font-bold text-gradient">儀表板</h2>
         <p className="text-slate-500 text-sm mt-1">車隊即時狀態總覽</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard icon={Car}         label="車輛總數" value={stats?.totalVehicles}   colorClass="bg-blue-500" />
-        <KpiCard icon={CheckCircle} label="可用車輛" value={stats?.available}       colorClass="bg-emerald-500" />
-        <KpiCard icon={Wrench}      label="維修中"   value={stats?.maintenance}      colorClass="bg-amber-500" />
-        <KpiCard icon={Users}       label="員工人數" value={stats?.totalEmployees}   colorClass="bg-violet-500" />
+        <KpiCard icon={Car}         label="車輛總數" value={stats?.totalVehicles}   colorClass="bg-blue-500"    glowClass="shadow-glow-blue" />
+        <KpiCard icon={CheckCircle} label="可用車輛" value={stats?.available}       colorClass="bg-emerald-500" glowClass="shadow-glow-green" />
+        <KpiCard icon={Wrench}      label="維修中"   value={stats?.maintenance}      colorClass="bg-amber-500"   glowClass="shadow-glow-amber" />
+        <KpiCard icon={Users}       label="員工人數" value={stats?.totalEmployees}   colorClass="bg-violet-500"  glowClass="shadow-glow-violet" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

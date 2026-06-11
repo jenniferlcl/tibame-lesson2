@@ -18,6 +18,9 @@ context: |
   - jsonwebtoken：JWT 存於 httpOnly + Secure + SameSite=Strict Cookie，效期 2h
   - 中介層：authenticate（驗 JWT cookie）→ authorize(['admin'])（檢查角色）
   - 錯誤回應格式：`{ message: '...' }`，搭配對應 HTTP status code
+  - `apps/backend/src/lib/enums.js`：`VEHICLE_STATUSES`、`DEPARTMENTS`、`USER_ROLES` 陣列，是後端所有路由驗證的唯一真實來源；前端無法 import 此檔，需自行維護相同值
+  - `GET /api/dashboard/stats`：需認證（無需 admin），回傳 `{ totalVehicles, available, inUse, maintenance, retired, totalEmployees, vehicleStatusBreakdown[], monthlyVehicles[] }`
+  - `DELETE /api/employees/:id`：admin only；若員工仍被指派至任一車輛則回 409（呼叫端需先解除指派）；同時刪除對應 `users` 列
 
   **前端**
   - React 18，ESM，`@` alias → `src/`
@@ -30,6 +33,7 @@ context: |
   - PostgreSQL 16，透過 Docker Compose 啟動
   - Schema 定義在 apps/backend/src/db/schema.sql，seed 在 seed.sql，由 Docker 自動初始化
   - 重置 DB：docker compose down -v && docker compose up -d
+  - Mock 資料：`cd apps/backend && npm run seed:mock`（清空全表後寫入 10 員工 + 15 車輛，密碼 `Mock1234!`，production 環境拒絕執行）
   - 核心 ENUM：user_role('admin','user')、vehicle_status('available','in_use','maintenance','retired')
   - 三張核心表：users、employees（1-to-1 with users）、vehicles（optional FK to employees）
 
@@ -66,6 +70,11 @@ rules:
     - 每個重要決策須包含：選擇、理由、備選方案
     - 列出 Risks / Trade-offs，說明 Mitigation
     - Non-Goals 明確列出本次不涵蓋的範疇
+  specs:
+    - 使用繁體中文撰寫
+    - 每個 Requirement 以 `系統 SHALL ...` 陳述，後接一或多個 Scenario
+    - 每個 Scenario 使用 WHEN / THEN 格式，條件明確且可驗證
+    - 不含實作細節（不命名函式或元件）；聚焦在行為與約束
   tasks:
     - 使用繁體中文撰寫
     - 每個 task 拆成可在 1-2 小時內完成的單元

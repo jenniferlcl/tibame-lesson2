@@ -114,7 +114,7 @@ export function EmployeesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">員工管理</h2>
+          <h2 className="text-2xl font-bold text-gradient">員工管理</h2>
           <p className="text-muted-foreground text-sm mt-1">共 {employees.length} 位員工</p>
         </div>
         <Button onClick={() => setDialog({ open: true, employee: null })}>
@@ -138,7 +138,7 @@ export function EmployeesPage() {
           </TableHeader>
           <TableBody>
             {employees.map(e => (
-              <TableRow key={e.id}>
+              <TableRow key={e.id} className="border-l-2 border-l-transparent hover:border-l-brand-primary/40 transition-colors">
                 <TableCell className="font-mono">{e.employee_no}</TableCell>
                 <TableCell className="font-medium">{e.name}</TableCell>
                 <TableCell>{e.department ?? '—'}</TableCell>

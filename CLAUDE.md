@@ -43,6 +43,7 @@ cd apps/frontend && npm run dev   # vite (proxies /api → http://localhost:3001
 | Root | `npm run test:watch` | Jest watch mode |
 | Backend | `npm run dev` | `node --watch src/index.js` |
 | Backend | `npm start` | `node src/index.js` |
+| Backend | `npm run seed:mock` | Load 10 employees + 15 vehicles (password `Mock1234!`) |
 | Frontend | `npm run dev` | Vite dev server |
 | Frontend | `npm run build` | Vite production build |
 
@@ -59,6 +60,8 @@ To reset to a clean state: `docker compose down -v && docker compose up -d`
 
 Default seed accounts (password `Admin1234!`): `admin` (admin), `alice` (user), `bob` (user).
 
+`npm run seed:mock` (from `apps/backend`) wipes all tables and loads richer test data: 10 users/employees across 4 departments + 15 vehicles across all statuses. Password for all mock accounts is `Mock1234!`. Blocked in `NODE_ENV=production`.
+
 pgAdmin: http://localhost:5050 — `admin@example.com` / `admin`. Connect to host `postgres` (Docker hostname), not `localhost`.
 
 ## Architecture
@@ -67,6 +70,7 @@ pgAdmin: http://localhost:5050 — `admin@example.com` / `admin`. Connect to hos
 
 - `src/index.js` — Express app setup, CORS, cookie-parser, route mounting.
 - `src/db/pool.js` — `pg.Pool` singleton, reads env vars.
+- `src/lib/enums.js` — `VEHICLE_STATUSES`, `DEPARTMENTS`, `USER_ROLES` arrays used for validation in all route handlers. Frontend duplicates these values manually — there is no shared package.
 - `src/middleware/authenticate.js` — verifies JWT from `req.cookies.token`; attaches `req.user`.
 - `src/middleware/authorize.js` — role guard factory: `authorize(['admin'])`.
 - `src/routes/` — `auth.js`, `vehicles.js`, `employees.js`, `dashboard.js`.
@@ -75,9 +79,16 @@ Auth flow: `POST /api/auth/login` → JWT signed with `JWT_SECRET`, stored as ht
 
 Authorization: all `/api/employees` routes require `admin`. `DELETE /api/vehicles/:id` requires `admin`. Other vehicle routes require only authentication. Vehicles query joins employees to return `assigned_employee_name`.
 
+`GET /api/dashboard/stats` — auth required (no admin), returns `{ totalVehicles, available, inUse, maintenance, retired, totalEmployees, vehicleStatusBreakdown[], monthlyVehicles[] }`.
+
+`DELETE /api/employees/:id` — admin only. Blocked (409) if the employee is currently assigned to any vehicle; caller must unassign first. Also deletes the linked `users` row.
+
+Employee POST/PUT use a `pg` client transaction (BEGIN/COMMIT/ROLLBACK) to keep `employees` and `users` rows in sync atomically.
+
 ### Frontend (`apps/frontend/` — ESM)
 
 - `src/main.jsx` → `src/App.jsx` — React Router 6 with nested layout route.
+- `src/pages/` — `LoginPage`, `DashboardPage`, `VehiclesPage`, `EmployeesPage`. `EmployeesPage` is wrapped in `AdminRoute` and only reachable by admins.
 - `src/context/AuthContext.jsx` — `AuthProvider` calls `/api/auth/me` on mount to restore session; exposes `{ user, login, logout }` via `useAuth()`.
 - `src/components/PrivateRoute.jsx` — `PrivateRoute` redirects unauthenticated users; `AdminRoute` redirects non-admins.
 - `src/components/AppLayout.jsx` — sidebar + `<Outlet />` shell.
