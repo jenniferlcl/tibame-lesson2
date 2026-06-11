@@ -1,165 +1,173 @@
-# tibame-lesson2
+# tibame-lesson2 — 車輛管理系統（VMS）
 
-這是一個 AI 課程的範例專案，提供預設的 **Agent Skills** 供學員練習如何與 AI 協作開發。
-
-## 關於 Agent Skills
-
-專案內建的 Skills 放置於 `.agents/skills/` 目錄下。
-
-每個 Skill 都是一份提示詞腳本，用來擴充 AI Agent 的特定能力。如果你使用其他 AI Agent（如 GitHub Copilot、Cursor、Gemini 等），可以參考這些 Skills 的結構與邏輯，改寫成符合你的工具的格式。
-
-## 內建 Skills
-
-| Skill | 說明 |
-|-------|------|
-| `git-smart-commit` | 將雜亂的 git 變更依功能邏輯自動拆分成多個有意義的 conventional commit |
-| `git-pr-description` | 根據 branch 差異自動產生 Pull Request 的 Title 與 Description |
-| `gen-test-cases` | 根據選取的程式碼或功能範圍，自動產生測試案例與對應測試程式 |
-| `git-branch-name` | 根據變更內容，設計符合 kebab-case 命名規則的名稱 |
-
-## 快速開始
-
-1. 安裝 [Claude Code](https://claude.ai/code)
-2. 在專案目錄下啟動 Claude Code
-3. 輸入 `/` 即可看到可用的 Skills 清單
+這是一個 AI 課程範例專案，包含一套完整的車輛管理系統，以及供學員練習 AI 協作開發的 **Agent Skills**。
 
 ---
 
-## 車輛管理系統（VMS）操作指南
-
-### 前置需求
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)（已啟動並處於 Running 狀態）
-- Node.js >= 20
-
-### 目錄結構
+## 目錄結構
 
 ```
 tibame-lesson2/
-├── docker-compose.yml        # Postgres + pgAdmin
 ├── apps/
-│   ├── backend/              # Express.js API (port 3001)
-│   └── frontend/             # React + Vite (port 5173)
+│   ├── backend/              # Express 5 + pg (raw SQL)，CommonJS，port 3001
+│   └── frontend/             # React 18 + Vite + shadcn/ui + Magic UI，port 5173
+├── infra/
+│   └── pgadmin/
+│       ├── servers.json      # pgAdmin 自動佈建連線設定
+│       └── pgpass            # pgAdmin 自動填入密碼
+├── src/skills/               # Agent Skill 範例（ESM，Jest 測試）
+├── openspec/                 # 變更提案、設計規格、任務清單
+└── docker-compose.yml        # PostgreSQL 16（port 5433）+ pgAdmin 4（port 5050）
 ```
 
 ---
 
-### 步驟一：啟動資料庫（Docker）
+## 快速開始
 
-確認 Docker Desktop 已在系統列顯示 **Running**，再執行：
+### 前置需求
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)（Running 狀態）
+- Node.js >= 20
+
+### 一次性安裝
 
 ```bash
-# 在專案根目錄（tibame-lesson2/）執行
+# 1. 啟動資料庫（自動執行 schema.sql + seed.sql）
 docker compose up -d
-```
 
-確認容器狀態：
-
-```bash
-docker compose ps
-```
-
-兩個 container 都應顯示 `healthy` 或 `running`：
-- `vms_postgres` — PostgreSQL 16（port 5432）
-- `vms_pgadmin` — pgAdmin 4（port 5050）
-
-停止容器：
-
-```bash
-docker compose down
-```
-
----
-
-### 步驟二：啟動後端
-
-```bash
+# 2. 安裝後端依賴並設定環境變數
 cd apps/backend
-npm run dev
+cp .env.example .env      # 已預設正確設定，通常不需修改
+npm install
+
+# 3. 安裝前端依賴
+cd ../frontend
+npm install
+
+# 4. 安裝根目錄依賴（Agent Skills 測試用）
+cd ../..
+npm install
 ```
-
-後端預設跑在 `http://localhost:3001`。
-
-> 若 `.env` 不存在，請先執行：`cp .env.example .env`
 
 ---
 
-### 步驟三：啟動前端
+## 每日開發
 
-開啟另一個終端機：
+每次開發需開啟三個終端機：
 
 ```bash
-cd apps/frontend
-npm run dev
+# 終端 1：資料庫（已在背景執行則略過）
+docker compose up -d
+
+# 終端 2：後端
+cd apps/backend && npm run dev
+
+# 終端 3：前端
+cd apps/frontend && npm run dev
 ```
 
-前端預設跑在 `http://localhost:5173`。
+---
 
-> 若 `.env` 不存在，請先執行：`cp .env.example .env`
+## 服務網址
+
+| 服務 | 網址 | 說明 |
+|------|------|------|
+| 前端應用 | http://localhost:5173 | React + Vite |
+| 後端 API | http://localhost:3001 | Express REST API |
+| pgAdmin  | http://localhost:5050 | PostgreSQL 管理介面 |
 
 ---
 
-### 服務網址一覽
+## 預設帳號
 
-| 服務 | 網址 |
-|------|------|
-| 前端應用 | http://localhost:5173 |
-| 後端 API | http://localhost:3001 |
-| pgAdmin | http://localhost:5050 |
+### 應用程式登入（http://localhost:5173）
 
----
-
-### 應用程式登入帳號
-
-所有預設帳號的密碼均為 **`Admin1234!`**
+密碼均為 `Admin1234!`
 
 | 帳號 | 角色 | 說明 |
 |------|------|------|
-| `admin` | 管理者 | 可存取所有功能 |
-| `alice` | 一般使用者 | 業務部員工 |
-| `bob`   | 一般使用者 | 工程部員工 |
+| `admin` | 管理者 | 可存取所有功能（含員工管理、刪除車輛） |
+| `alice` | 一般使用者 | 僅可檢視 / 新增 / 編輯車輛 |
+| `bob`   | 一般使用者 | 僅可檢視 / 新增 / 編輯車輛 |
 
----
-
-### pgAdmin 登入與設定 Server
-
-#### 1. 登入 pgAdmin
-
-開啟 http://localhost:5050，使用以下帳密登入：
+### pgAdmin（http://localhost:5050）
 
 | 欄位 | 值 |
 |------|----|
 | Email | `admin@example.com` |
 | Password | `admin` |
 
-#### 2. 新增 Server 連線
+登入後左側 **Servers** 會自動出現 **VMS Postgres (tibame-lesson2)** 連線，無需手動設定。
 
-登入後，點選左側 **Servers** → 右鍵 **Register → Server...**，依以下設定填寫：
+---
 
-**General 頁籤**
+## 資料庫管理
 
-| 欄位 | 值 |
-|------|----|
-| Name | `VMS Local`（任意名稱） |
+| 指令 | 說明 |
+|------|------|
+| `docker compose up -d` | 啟動 PostgreSQL + pgAdmin |
+| `docker compose down` | 停止容器（保留資料） |
+| `docker compose down -v` | 停止並**清除所有資料**（重置為初始狀態） |
+| `docker compose ps` | 查看容器狀態 |
 
-**Connection 頁籤**
+> PostgreSQL 對外 port 為 **5433**（避免與其他 Postgres 衝突）。  
+> pgAdmin 連線使用 Docker 內部 hostname `postgres`，port `5432`。
 
-| 欄位 | 值 |
-|------|----|
-| Host name/address | `postgres`（Docker 內部 hostname） |
-| Port | `5432` |
-| Maintenance database | `vms_db` |
-| Username | `vms_user` |
-| Password | `vms_password` |
+---
 
-> 注意：Host 請填 `postgres`（container name），不是 `localhost`。
+## 功能說明
 
-點選 **Save** 即可連線，展開後可看到 `vms_db` 資料庫。
+### 前端技術棧
 
-## 自訂 Skills
+- React 18 + Vite 5 + React Router 6
+- shadcn/ui（Button、Card、Dialog、Table、Select、Badge、Alert、AlertDialog）
+- Magic UI NumberTicker（儀表板 KPI 動畫數字）
+- recharts（圓餅圖 + 長條圖）
+- Axios（`withCredentials: true`，proxy `/api` → port 3001）
 
-每個 Skill 的核心是 `SKILL.md`，描述該 Skill 的運作流程與規則。你可以：
+### 頁面功能
 
-- 直接修改現有 Skill 的行為
-- 新增自己的 Skill 目錄與 `SKILL.md`
-- 將 Skill 邏輯移植到其他 AI Agent 平台
+| 頁面 | 路由 | 權限 | 說明 |
+|------|------|------|------|
+| 登入 | `/login` | 所有人 | 帳號密碼驗證，JWT httpOnly cookie |
+| 儀表板 | `/dashboard` | 已登入 | KPI 卡片 + 車輛狀態圓餅圖 + 每月新增長條圖 |
+| 車輛管理 | `/vehicles` | 已登入 | 查看 / 新增 / 編輯；刪除僅限管理者 |
+| 員工管理 | `/employees` | 管理者 | 完整 CRUD，新增同步建立登入帳號 |
+
+### 後端 API
+
+| 路由群組 | 說明 |
+|----------|------|
+| `POST /api/auth/login` | 登入，回傳 JWT cookie |
+| `POST /api/auth/logout` | 登出，清除 cookie |
+| `GET /api/auth/me` | 取得目前登入使用者 |
+| `GET/POST/PUT/DELETE /api/vehicles` | 車輛 CRUD |
+| `GET/POST/PUT/DELETE /api/employees` | 員工 CRUD（admin only） |
+| `GET /api/dashboard/stats` | 儀表板統計數據 |
+
+---
+
+## Agent Skills
+
+內建 Skills 放在 `.agents/skills/`，透過 Claude Code 的 `/` 指令呼叫：
+
+| Skill | 說明 |
+|-------|------|
+| `git-smart-commit` | 將變更自動拆分成多個語意清晰的 conventional commit |
+| `git-pr-description` | 自動產生 Pull Request 標題與描述 |
+| `gen-test-cases` | 根據程式碼產生測試案例與測試程式 |
+| `git-branch-name` | 根據變更內容設計 kebab-case branch 名稱 |
+| `openspec-*` | OpenSpec 工作流程（提案 → 設計 → 實作 → 歸檔） |
+
+---
+
+## 常見問題
+
+**Q：啟動時 port 5433 衝突？**  
+A：執行 `docker compose down` 後重試，或檢查是否有其他服務佔用 5433。
+
+**Q：登入密碼錯誤？**  
+A：若資料庫 volume 是舊版本保留的，執行 `docker compose down -v && docker compose up -d` 重置即可。
+
+**Q：pgAdmin 看不到 VMS 伺服器？**  
+A：執行 `docker compose down && docker compose up -d` 重啟容器，`servers.json` 只在初次啟動時載入。
