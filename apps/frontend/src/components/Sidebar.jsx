@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Car, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Car, Users, ClipboardList, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -59,6 +59,17 @@ export function Sidebar() {
             )}
           >
             <Users size={18} /> 員工管理
+          </NavLink>
+        )}
+        {user?.role === 'admin' && (
+          <NavLink
+            to="/audit-log"
+            className={({ isActive }) => cn(navItem, isActive
+              ? 'bg-brand-primary/10 text-brand-primary font-semibold'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            )}
+          >
+            <ClipboardList size={18} /> 操作紀錄
           </NavLink>
         )}
       </nav>

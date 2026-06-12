@@ -20,7 +20,7 @@
 - **THEN** 列表依年份升冪排列；再次點擊改為降冪排列
 
 ### Requirement: 已登入使用者可新增車輛
-系統 SHALL 允許已登入用戶透過 shadcn/ui Dialog + Form 新增車輛。表單中 `status` 欄位 MUST 為 shadcn/ui Select（可用 / 使用中 / 維修中 / 報廢），`brand` 欄位 MUST 為 shadcn/ui Select（Toyota / Honda / Ford / Mazda / Nissan / Mitsubishi / BMW / Mercedes-Benz / 其他）。後端 `POST /api/vehicles` MUST 驗證 `status` 為合法 ENUM 值，違規回傳 `400 { message: 'Invalid status value' }`。
+系統 SHALL 允許已登入用戶透過 shadcn/ui Dialog + Form 新增車輛。表單中 `status` 欄位 MUST 為 shadcn/ui Select（可用 / 使用中 / 維修中 / 報廢），`brand` 欄位 MUST 為 shadcn/ui Select（Toyota / Honda / Ford / Mazda / Nissan / Mitsubishi / BMW / Mercedes-Benz / 其他），`color` 欄位 MUST 為 shadcn/ui Select（白色 / 銀色 / 黑色 / 灰色 / 紅色 / 藍色 / 棕色 / 橘色 / 黃色 / 綠色 / 其他）。後端 `POST /api/vehicles` MUST 驗證 `status`、`brand`、`color` 均為合法 ENUM 值，違規分別回傳 `400 { message: 'Invalid status value' }`、`400 { message: 'Invalid brand value' }`、`400 { message: 'Invalid color value' }`。
 
 #### Scenario: 使用者開啟新增對話框
 - **WHEN** 使用者點擊「新增車輛」按鈕
@@ -38,9 +38,21 @@
 - **WHEN** 使用者開啟新增車輛 Dialog
 - **THEN** `brand` 欄位顯示為 shadcn/ui Select，選項為 Toyota、Honda、Ford、Mazda、Nissan、Mitsubishi、BMW、Mercedes-Benz、其他
 
+#### Scenario: color 下拉選單限制
+- **WHEN** 使用者開啟新增車輛 Dialog
+- **THEN** `color` 欄位顯示為 shadcn/ui Select，選項為白色、銀色、黑色、灰色、紅色、藍色、棕色、橘色、黃色、綠色、其他
+
 #### Scenario: 後端拒絕非法 status 值
 - **WHEN** 呼叫 POST /api/vehicles 並帶入 `status: 'broken'`（非合法 ENUM 值）
 - **THEN** 後端回傳 `400 { message: 'Invalid status value' }`
+
+#### Scenario: 後端拒絕非法 brand 值
+- **WHEN** 呼叫 POST /api/vehicles 並帶入 `brand: 'Unknown'`（非合法 ENUM 值）
+- **THEN** 後端回傳 `400 { message: 'Invalid brand value' }`
+
+#### Scenario: 後端拒絕非法 color 值
+- **WHEN** 呼叫 POST /api/vehicles 並帶入 `color: 'purple'`（非合法 ENUM 值）
+- **THEN** 後端回傳 `400 { message: 'Invalid color value' }`
 
 #### Scenario: 車牌重複
 - **WHEN** 使用者提交的車牌號碼已存在
@@ -51,11 +63,11 @@
 - **THEN** Dialog 顯示驗證錯誤，不建立記錄
 
 ### Requirement: 已登入使用者可編輯車輛
-系統 SHALL 允許已登入用戶透過 shadcn/ui Dialog + Form 編輯現有車輛。`status` 與 `brand` MUST 以 shadcn/ui Select 呈現，預設值為當前值。
+系統 SHALL 允許已登入用戶透過 shadcn/ui Dialog + Form 編輯現有車輛。`status`、`brand`、`color` MUST 以 shadcn/ui Select 呈現，預設值為當前值。後端 `PUT /api/vehicles/:id` MUST 驗證 `brand`、`color` 為合法 ENUM 值，違規回傳 400。
 
 #### Scenario: 使用者開啟編輯對話框
 - **WHEN** 使用者點擊某車輛的編輯按鈕
-- **THEN** shadcn/ui Dialog 開啟，`status` 與 `brand` Select 預設顯示該車輛當前值
+- **THEN** shadcn/ui Dialog 開啟，`status`、`brand`、`color` Select 預設顯示該車輛當前值
 
 #### Scenario: 使用者指派車輛給員工
 - **WHEN** 使用者從指派員工 Select 選擇員工並儲存
@@ -68,6 +80,14 @@
 #### Scenario: 後端拒絕非法 status 值（PUT）
 - **WHEN** 呼叫 PUT /api/vehicles/:id 並帶入非合法 status 值
 - **THEN** 後端回傳 `400 { message: 'Invalid status value' }`
+
+#### Scenario: 後端拒絕非法 brand 值（PUT）
+- **WHEN** 呼叫 PUT /api/vehicles/:id 並帶入非合法 brand 值
+- **THEN** 後端回傳 `400 { message: 'Invalid brand value' }`
+
+#### Scenario: 後端拒絕非法 color 值（PUT）
+- **WHEN** 呼叫 PUT /api/vehicles/:id 並帶入非合法 color 值
+- **THEN** 後端回傳 `400 { message: 'Invalid color value' }`
 
 ### Requirement: 僅管理者可刪除車輛
 系統 SHALL 僅允許 role 為 `admin` 的使用者刪除車輛記錄。
@@ -86,6 +106,21 @@
 #### Scenario: 車輛詳情顯示所有欄位
 - **WHEN** 使用者開啟車輛的詳情或編輯面板
 - **THEN** 所有欄位均以當前值顯示
+
+### Requirement: 車輛異動自動觸發 audit log
+系統 SHALL 在車輛成功新增、更新或刪除後，自動非同步寫入一筆 audit log，紀錄操作者、動作與車輛 ID；此寫入操作 SHALL NOT 影響原 API 回應時間或結果。
+
+#### Scenario: 新增車輛觸發 audit log
+- **WHEN** POST /api/vehicles 成功回傳 201
+- **THEN** 系統在背景寫入 audit log（action=create, resource_type=vehicle）
+
+#### Scenario: 更新車輛觸發 audit log
+- **WHEN** PUT /api/vehicles/:id 成功回傳 200
+- **THEN** 系統在背景寫入 audit log（action=update, resource_type=vehicle）
+
+#### Scenario: 刪除車輛觸發 audit log
+- **WHEN** DELETE /api/vehicles/:id 成功回傳 204
+- **THEN** 系統在背景寫入 audit log（action=delete, resource_type=vehicle）
 
 ### Requirement: 車輛狀態值受限
 系統 SHALL 強制執行合法的車輛狀態值：`available`（可用）、`in_use`（使用中）、`maintenance`（維修中）、`retired`（報廢）。

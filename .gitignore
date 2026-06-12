@@ -14,3 +14,4 @@ dist/
 
 # Skill 自動產生的時間戳備份
 .agents/backup/
+pr-review.md
