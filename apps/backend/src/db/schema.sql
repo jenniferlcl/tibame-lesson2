@@ -45,3 +45,13 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER vehicles_updated_at
   BEFORE UPDATE ON vehicles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id            SERIAL PRIMARY KEY,
+  user_id       INT REFERENCES users(id) ON DELETE SET NULL,
+  action        VARCHAR(20) NOT NULL,
+  resource_type VARCHAR(50) NOT NULL,
+  resource_id   INT,
+  detail        JSONB,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
